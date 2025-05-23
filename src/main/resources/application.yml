@@ -1,0 +1,111 @@
+server:
+  port: 8080
+  forward-headers-strategy: native
+  shutdown: graceful
+
+logging:
+  level:
+    org.springframework.cloud.gateway.filter.ratelimit: DEBUG
+    org.springframework.data.redis: DEBUG
+    reactor.netty.http.client: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "loggers"
+
+spring:
+  data:
+    redis:
+      host: 172.27.220.184
+      port: 6379
+      password: param
+      client-type: lettuce
+      timeout: 5000
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 10
+          max-idle: 5
+          min-idle: 1
+          max-wait: 1000
+  cloud:
+    gateway:
+      filter:
+        request-rate-limiter:
+          enabled: true
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 10s
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: param-soft-demo-route
+          uri: lb://param-soft-demo
+          predicates:
+            - Path=/param-soft-demo/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@dynamicServiceKeyResolver}"
+                redis-rate-limiter:
+                  replenish-rate: 5
+                  burst-capacity: 10
+                  requested-tokens: 1
+            - name: RewritePath
+              args:
+                regexp: /param-soft-demo/(?<segment>.*)
+                replacement: /demo/${segment}
+
+        - id: param-soft-edulms-route
+          uri: lb://param-soft-edulms
+          predicates:
+            - Path=/param-soft-edulms/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@dynamicServiceKeyResolver}"
+                redis-rate-limiter:
+                  replenish-rate: 5
+                  burst-capacity: 10
+                  requested-tokens: 1
+            - name: RewritePath
+              args:
+                regexp: /param-soft-edulms/(?<segment>.*)
+                replacement: /lms/${segment}
+
+        - id: param-soft-common
+          uri: lb://param-soft-common
+          predicates:
+            - Path=/param-soft-common/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@dynamicServiceKeyResolver}"
+                redis-rate-limiter:
+                  replenish-rate: 5
+                  burst-capacity: 10
+                  requested-tokens: 1
+            - name: RewritePath
+              args:
+                regexp: /param-soft-common/(?<segment>.*)
+                replacement: /common/${segment}
+
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            key-resolver: "#{@dynamicServiceKeyResolver}"
+            redis-rate-limiter:
+              replenish-rate: 5
+              burst-capacity: 10
+              requested-tokens: 1
+    loadbalancer:
+      retry:
+        enabled: true
+        maxRetriesOnSameServiceInstance: 1
+        maxRetriesOnNextServiceInstance: 2
