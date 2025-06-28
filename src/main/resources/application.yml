@@ -16,6 +16,11 @@ management:
     web:
       exposure:
         include: "loggers"
+        
+gateway:
+  security:
+    skip-paths: "/param-soft-auth/service/v1.0/auth/**"
+        
 
 spring:
   data:
@@ -44,58 +49,6 @@ spring:
         locator:
           enabled: true
           lower-case-service-id: true
-      routes:
-        - id: param-soft-demo-route
-          uri: lb://param-soft-demo
-          predicates:
-            - Path=/param-soft-demo/**
-          filters:
-            - name: RequestRateLimiter
-              args:
-                key-resolver: "#{@dynamicServiceKeyResolver}"
-                redis-rate-limiter:
-                  replenish-rate: 5
-                  burst-capacity: 10
-                  requested-tokens: 1
-            - name: RewritePath
-              args:
-                regexp: /param-soft-demo/(?<segment>.*)
-                replacement: /demo/${segment}
-
-        - id: param-soft-edulms-route
-          uri: lb://param-soft-edulms
-          predicates:
-            - Path=/param-soft-edulms/**
-          filters:
-            - name: RequestRateLimiter
-              args:
-                key-resolver: "#{@dynamicServiceKeyResolver}"
-                redis-rate-limiter:
-                  replenish-rate: 5
-                  burst-capacity: 10
-                  requested-tokens: 1
-            - name: RewritePath
-              args:
-                regexp: /param-soft-edulms/(?<segment>.*)
-                replacement: /lms/${segment}
-
-        - id: param-soft-common
-          uri: lb://param-soft-common
-          predicates:
-            - Path=/param-soft-common/**
-          filters:
-            - name: RequestRateLimiter
-              args:
-                key-resolver: "#{@dynamicServiceKeyResolver}"
-                redis-rate-limiter:
-                  replenish-rate: 5
-                  burst-capacity: 10
-                  requested-tokens: 1
-            - name: RewritePath
-              args:
-                regexp: /param-soft-common/(?<segment>.*)
-                replacement: /common/${segment}
-
       default-filters:
         - name: RequestRateLimiter
           args:
